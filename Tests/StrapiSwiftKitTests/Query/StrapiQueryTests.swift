@@ -119,4 +119,31 @@ struct StrapiQueryTests {
         #expect(dict["pagination[pageSize]"] == "50")
     }
 
+    @Test
+    func testSinglePopulateBuildsCorrectQueryItem() {
+        let query = StrapiQuery()
+            .populate("author")
+        let items = query.build()
+
+        #expect(items.count == 1)
+        #expect(items[0].name == "populate[0]")
+        #expect(items[0].value == "author")
+    }
+
+    @Test
+    func testMultiplePopulateBuildCorrectOrder() {
+        let query = StrapiQuery()
+            .populate("author")
+            .populate("comments")
+
+        let items = query.build()
+
+        #expect(items.count == 2)
+
+        #expect(items[0].name == "populate[0]")
+        #expect(items[0].value == "author")
+
+        #expect(items[1].name == "populate[1]")
+        #expect(items[1].value == "comments")
+    }
 }

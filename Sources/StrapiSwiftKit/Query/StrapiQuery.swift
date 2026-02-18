@@ -3,6 +3,7 @@ import Foundation
 public final class StrapiQuery: @unchecked Sendable {
 
     private var filters: [StrapiFilter] = []
+    private var populates: [String] = []
     private var sorts: [(String, StrapiSortOrder)] = []
     private var pageNumber: Int?
     private var pageSize: Int?
@@ -34,16 +35,37 @@ public final class StrapiQuery: @unchecked Sendable {
         return self
     }
 
+    @discardableResult
+    public func populate(_ field: String) -> Self {
+        self.populates.append(field)
+        return self
+    }
 
     public func build() -> [URLQueryItem] {
         var items: [URLQueryItem] = filtersQueryItems()
         items.append(contentsOf: sortQueryItems())
         items.append(contentsOf: paginationQueryItems())
+        items.append(contentsOf: populatesQueryItems())
         return items
     }
 }
 
 extension StrapiQuery {
+
+    private func populatesQueryItems() -> [URLQueryItem] {
+        var items: [URLQueryItem] = []
+
+        for (index, field) in populates.enumerated() {
+            items.append(
+                URLQueryItem(
+                    name: "populate[\(index)]",
+                    value: field
+                )
+            )
+        }
+
+        return items
+    }
 
     private func paginationQueryItems() -> [URLQueryItem] {
         var items: [URLQueryItem] = []

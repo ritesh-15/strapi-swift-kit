@@ -29,4 +29,15 @@ struct StrapiQueryTests {
         #expect(items[1].name == "filters[author][name][$containsi]")
         #expect(items[1].value == "john")
     }
+
+    @Test func testEqualsFilterBuildsCorrectQueryItem() async throws {
+        let query = StrapiQuery()
+            .filter(.equals("title", "iOS"))
+
+        let items = query.build()
+
+        #expect(items.count == 1)
+        #expect(items[0].name == "filters[title][$eq]")
+        #expect(items[0].value == "iOS")
+    }
 }

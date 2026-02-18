@@ -25,4 +25,15 @@ extension StrapiFilter {
             value: value
         )
     }
+
+    static func equals(
+        _ field: String,
+        _ value: String
+    ) -> StrapiFilter {
+        .init(
+            path: field.split(separator: ".").map(String.init),
+            op: .eq,
+            value: value
+        )
+    }
 }

@@ -12,6 +12,12 @@ public final class StrapiQuery: @unchecked Sendable {
         return self
     }
 
+    @discardableResult
+    public func equal(_ f: StrapiFilter) -> Self {
+        filters.append(f)
+        return self
+    }
+
     public func build() -> [URLQueryItem] {
         var items: [URLQueryItem] = []
 

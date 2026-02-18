@@ -86,4 +86,37 @@ struct StrapiQueryTests {
         })
     }
 
+    @Test
+    func testComplexQueryBuildsExpectedItems() {
+        let query = StrapiQuery()
+            .filter(.contains("title", "ios"))
+            .filter(.equals("status", "published"))
+            .filter(.contains("author.profile.city", "pune"))
+            .sort("publishedAt", .desc)
+            .sort("title", .asc)
+            .page(3, size: 50)
+
+        let items = query.build()
+
+        // Ensure total count matches expected pieces
+        #expect(items.count == 7)
+
+        let dict = Dictionary(
+            uniqueKeysWithValues: items.map { ($0.name, $0.value ?? "") }
+        )
+
+        // filters
+        #expect(dict["filters[title][$containsi]"] == "ios")
+        #expect(dict["filters[status][$eq]"] == "published")
+        #expect(dict["filters[author][profile][city][$containsi]"] == "pune")
+
+        // sorting
+        #expect(dict["sort[0]"] == "publishedAt:desc")
+        #expect(dict["sort[1]"] == "title:asc")
+
+        // pagination
+        #expect(dict["pagination[page]"] == "3")
+        #expect(dict["pagination[pageSize]"] == "50")
+    }
+
 }

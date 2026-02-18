@@ -68,4 +68,22 @@ struct StrapiQueryTests {
         #expect(items[1].name == "sort[1]")
         #expect(items[1].value == "title:asc")
     }
+
+    @Test
+    func testPaginationBuildsCorrectQueryItems() {
+        let query = StrapiQuery()
+            .page(2, size: 25)
+        let items = query.build()
+
+        #expect(items.count == 2)
+
+        #expect(items.contains {
+            $0.name == "pagination[page]" && $0.value == "2"
+        })
+
+        #expect(items.contains {
+            $0.name == "pagination[pageSize]" && $0.value == "25"
+        })
+    }
+
 }

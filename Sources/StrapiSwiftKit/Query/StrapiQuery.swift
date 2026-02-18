@@ -4,6 +4,8 @@ public final class StrapiQuery: @unchecked Sendable {
 
     private var filters: [StrapiFilter] = []
     private var sorts: [(String, StrapiSortOrder)] = []
+    private var pageNumber: Int?
+    private var pageSize: Int?
 
     public init() {}
 
@@ -25,14 +27,44 @@ public final class StrapiQuery: @unchecked Sendable {
         return self
     }
 
+    @discardableResult
+    public func page(_ page: Int, size pageSize: Int) -> Self {
+        self.pageSize = pageSize
+        self.pageNumber = page
+        return self
+    }
+
+
     public func build() -> [URLQueryItem] {
         var items: [URLQueryItem] = filtersQueryItems()
         items.append(contentsOf: sortQueryItems())
+        items.append(contentsOf: paginationQueryItems())
         return items
     }
 }
 
 extension StrapiQuery {
+
+    private func paginationQueryItems() -> [URLQueryItem] {
+        var items: [URLQueryItem] = []
+        if let pageNumber {
+            items.append(
+                URLQueryItem(
+                    name: "pagination[page]",
+                    value: String(pageNumber)
+                )
+            )
+        }
+        if let pageSize {
+            items.append(
+                URLQueryItem(
+                    name: "pagination[pageSize]",
+                    value: String(pageSize)
+                )
+            )
+        }
+        return items
+    }
 
     private func sortQueryItems() -> [URLQueryItem] {
         var items: [URLQueryItem] = []

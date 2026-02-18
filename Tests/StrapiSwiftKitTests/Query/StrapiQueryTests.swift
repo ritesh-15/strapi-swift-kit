@@ -146,4 +146,43 @@ struct StrapiQueryTests {
         #expect(items[1].name == "populate[1]")
         #expect(items[1].value == "comments")
     }
+
+    @Test
+    func testFieldsBuildCorrectQueryItems() {
+        let query = StrapiQuery()
+            .fields("title", "slug", "publishedAt")
+
+        let items = query.build()
+
+        #expect(items.count == 3)
+
+        #expect(items[0].name == "fields[0]")
+        #expect(items[0].value == "title")
+
+        #expect(items[1].name == "fields[1]")
+        #expect(items[1].value == "slug")
+
+        #expect(items[2].name == "fields[2]")
+        #expect(items[2].value == "publishedAt")
+    }
+
+    @Test
+    func testFieldsWorkWithFiltersAndSort() {
+        let query = StrapiQuery()
+            .fields("title", "slug")
+            .filter(.equals("status", "published"))
+            .sort("publishedAt", .desc)
+
+        let items = query.build()
+
+        let dict = Dictionary(
+            uniqueKeysWithValues: items.map { ($0.name, $0.value ?? "") }
+        )
+
+        #expect(dict["fields[0]"] == "title")
+        #expect(dict["fields[1]"] == "slug")
+        #expect(dict["filters[status][$eq]"] == "published")
+        #expect(dict["sort[0]"] == "publishedAt:desc")
+    }
+
 }

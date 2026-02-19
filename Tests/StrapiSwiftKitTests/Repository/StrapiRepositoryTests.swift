@@ -130,4 +130,23 @@ struct StrapiRepositoryTests {
         #expect(result.data.name == "John doe")
         #expect(result.data.email == "johndoe@gmail.com")
     }
+
+    @Test func testDeletingData() async throws {
+        let client = TestUtils.makeClient { request in
+            #expect(request.httpMethod == "DELETE")
+            #expect(request.url?.absoluteString.hasSuffix("/articles/1") == true)
+
+            let json = """
+                {
+                    "data": { "id":1}
+                }
+                """.data(using: .utf8)
+
+            return (json!, TestUtils.okResponse(for: request))
+        }
+
+        let repository = StrapiRepository<RepoDTO>(client: client, endpoint: .init("/articles", method: .DELETE))
+        let result = try await repository.delete(id: "1")
+        #expect(result.data.id == 1)
+    }
 }

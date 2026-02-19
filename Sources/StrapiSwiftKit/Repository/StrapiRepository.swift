@@ -54,4 +54,15 @@ final class StrapiRepository<DTO: Codable & Sendable>: Sendable  {
 
         return response
     }
+
+    func delete(id: String) async throws -> StrapiSingleResponse<DTO> {
+        let singleEndpoint = StrapiEndpoint(
+            endpoint.path + "/\(id)",
+            method: endpoint.method
+        )
+
+        let response: StrapiSingleResponse<DTO> =
+        try await client.send(singleEndpoint)
+        return response
+    }
 }

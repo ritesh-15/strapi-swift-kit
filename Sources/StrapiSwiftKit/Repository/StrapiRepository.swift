@@ -17,8 +17,13 @@ final class StrapiRepository<DTO: Codable & Sendable>: Sendable  {
     }
 
     func get(id: String, query: StrapiQuery? = nil) async throws -> StrapiSingleResponse<DTO> {
+        let singleEndpoint = StrapiEndpoint(
+            endpoint.path + "/\(id)",
+            method: endpoint.method
+        )
+
         let items: [URLQueryItem] = query?.build() ?? []
-        let response: StrapiSingleResponse<DTO> = try await client.send(endpoint, queryItems: items)
+        let response: StrapiSingleResponse<DTO> = try await client.send(singleEndpoint, queryItems: items)
         return response
     }
 
@@ -28,6 +33,22 @@ final class StrapiRepository<DTO: Codable & Sendable>: Sendable  {
         let response: StrapiSingleResponse<DTO> =
         try await client.send(
             endpoint,
+            body: body
+        )
+
+        return response
+    }
+
+    func put(id: String, dto: DTO) async throws -> StrapiSingleResponse<DTO> {
+        let singleEndpoint = StrapiEndpoint(
+            endpoint.path + "/\(id)",
+            method: endpoint.method
+        )
+
+        let body = StrapiCreateRequest(data: dto)
+        let response: StrapiSingleResponse<DTO> =
+        try await client.send(
+            singleEndpoint,
             body: body
         )
 

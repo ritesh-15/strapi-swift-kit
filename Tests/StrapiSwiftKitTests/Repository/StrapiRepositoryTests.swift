@@ -99,4 +99,35 @@ struct StrapiRepositoryTests {
         #expect(result.data.name == "John doe")
         #expect(result.data.email == "johndoe@gmail.com")
     }
+
+    @Test func testUpdatingData() async throws {
+        let client = TestUtils.makeClient { request in
+            #expect(request.httpMethod == "PUT")
+            #expect(request.url?.absoluteString == "https://example.com/api/articles/1")
+
+            let body = request.httpBody
+            assert(body != nil, "Request body should not be nil")
+
+            let decoded = try JSONDecoder().decode(StrapiCreateRequest<CreateRecordDTO>.self, from: body!)
+
+            #expect(decoded.data.id == 1)
+            #expect(decoded.data.name == "John doe")
+            #expect(decoded.data.email == "johndoe@gmail.com")
+
+            let json = """
+                {
+                    "data": { "id": 1, "name": "John doe", "email": "johndoe@gmail.com" },
+                }
+                """.data(using: .utf8)
+
+            return (json!, TestUtils.okResponse(for: request))
+        }
+
+        let repository = StrapiRepository<CreateRecordDTO>(client: client, endpoint: .init("/articles", method: .PUT))
+        let result = try await repository.put(id:"1", dto: CreateRecordDTO(id: 1, name: "John doe", email: "johndoe@gmail.com"))
+
+        #expect(result.data.id == 1)
+        #expect(result.data.name == "John doe")
+        #expect(result.data.email == "johndoe@gmail.com")
+    }
 }

@@ -42,13 +42,39 @@ public extension StrapiClient {
             throw StrapiError.transport
         }
     }
+
+    func send<T: Decodable, Body: Encodable>(
+        _ endpoint: StrapiEndpoint,
+        body: Body
+    ) async throws -> T {
+        let request = try buildRequest(
+            endpoint: endpoint,
+            queryItems: nil,
+            body: JSONEncoder().encode(body)
+        )
+
+        do {
+            let (data, response) = try await transport.send(request)
+
+            try validate(response)
+
+            return try JSONDecoder.strapi.decode(T.self, from: data)
+        } catch is DecodingError {
+            throw StrapiError.decoding
+        } catch let e as StrapiError {
+            throw e
+        } catch {
+            throw StrapiError.transport
+        }
+    }
 }
 
 private extension StrapiClient {
 
     func buildRequest(
         endpoint: StrapiEndpoint,
-        queryItems: [URLQueryItem]?
+        queryItems: [URLQueryItem]? = nil,
+        body: Data? = nil
     ) throws -> URLRequest {
         var components = URLComponents(
             url: config.baseURL,
@@ -64,6 +90,11 @@ private extension StrapiClient {
 
         var request = URLRequest(url: url)
         request.httpMethod = endpoint.method.rawValue
+
+        if let body {
+            request.httpBody = body
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        }
 
         if let token = authProvider?.token {
             request.setValue(

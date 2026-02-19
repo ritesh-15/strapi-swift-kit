@@ -1,9 +1,15 @@
 import Foundation
 
-public enum StrapiError: Error, Equatable {
+public enum StrapiError: Error, Sendable, Equatable {
     case invalidURL
     case invalidResponse
-    case httpStatus(Int)
-    case decoding
-    case transport
+
+    case server(
+        status: Int,
+        name: String,
+        message: String
+    )
+
+    case decoding(String)
+    case transport(String)
 }

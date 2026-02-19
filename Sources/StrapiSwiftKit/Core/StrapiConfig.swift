@@ -6,7 +6,7 @@ public final class StrapiConfig: Sendable {
     public let apiPath: String
     public let jwtToken: String?
 
-    init(baseURL: URL, apiPath: String = "/api", jwtToken: String? = nil) {
+    public init(baseURL: URL, apiPath: String = "/api", jwtToken: String? = nil) {
         self.baseURL = baseURL
         self.apiPath = apiPath
         self.jwtToken = jwtToken

@@ -1,22 +1,22 @@
 import Foundation
 
-final class StrapiRepository<DTO: Codable & Sendable>: Sendable  {
+public final class StrapiRepository<DTO: Codable & Sendable>: Sendable  {
 
     private let client: StrapiClient
     private let endpoint: StrapiEndpoint
 
-    init(client: StrapiClient, endpoint: StrapiEndpoint) {
+    public init(client: StrapiClient, endpoint: StrapiEndpoint) {
         self.client = client
         self.endpoint = endpoint
     }
 
-    func list(query: StrapiQuery?) async throws -> StrapiListResponse<DTO> {
+    public func list(query: StrapiQuery?) async throws -> StrapiListResponse<DTO> {
         let items: [URLQueryItem] = query?.build() ?? []
         let response: StrapiListResponse<DTO> = try await client.send(endpoint, queryItems: items)
         return response
     }
 
-    func get(id: String, query: StrapiQuery? = nil) async throws -> StrapiSingleResponse<DTO> {
+    public func get(id: String, query: StrapiQuery? = nil) async throws -> StrapiSingleResponse<DTO> {
         let singleEndpoint = StrapiEndpoint(
             endpoint.path + "/\(id)",
             method: endpoint.method
@@ -27,7 +27,7 @@ final class StrapiRepository<DTO: Codable & Sendable>: Sendable  {
         return response
     }
 
-    func create(dto: DTO) async throws -> StrapiSingleResponse<DTO> {
+    public func create(dto: DTO) async throws -> StrapiSingleResponse<DTO> {
         let body = StrapiCreateRequest(data: dto)
 
         let response: StrapiSingleResponse<DTO> =
@@ -39,7 +39,7 @@ final class StrapiRepository<DTO: Codable & Sendable>: Sendable  {
         return response
     }
 
-    func put(id: String, dto: DTO) async throws -> StrapiSingleResponse<DTO> {
+    public func put(id: String, dto: DTO) async throws -> StrapiSingleResponse<DTO> {
         let singleEndpoint = StrapiEndpoint(
             endpoint.path + "/\(id)",
             method: endpoint.method
@@ -55,7 +55,7 @@ final class StrapiRepository<DTO: Codable & Sendable>: Sendable  {
         return response
     }
 
-    func delete(id: String) async throws -> StrapiSingleResponse<DTO> {
+    public func delete(id: String) async throws -> StrapiSingleResponse<DTO> {
         let singleEndpoint = StrapiEndpoint(
             endpoint.path + "/\(id)",
             method: endpoint.method

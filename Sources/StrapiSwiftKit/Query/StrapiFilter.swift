@@ -6,7 +6,7 @@ public struct StrapiFilter: Sendable {
     let op: StrapiOperators
     let value: String
 
-    init(path: [String], op: StrapiOperators, value: String) {
+    public init(path: [String], op: StrapiOperators, value: String) {
         self.path = path
         self.op = op
         self.value = value
@@ -15,7 +15,7 @@ public struct StrapiFilter: Sendable {
 
 extension StrapiFilter {
 
-    static func contains(
+    public static func contains(
         _ field: String,
         _ value: String
     ) -> StrapiFilter {
@@ -26,7 +26,7 @@ extension StrapiFilter {
         )
     }
 
-    static func equals(
+    public static func equals(
         _ field: String,
         _ value: String
     ) -> StrapiFilter {

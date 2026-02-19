@@ -18,12 +18,6 @@ public final class StrapiQuery: @unchecked Sendable {
     }
 
     @discardableResult
-    public func equal(_ f: StrapiFilter) -> Self {
-        filters.append(f)
-        return self
-    }
-
-    @discardableResult
     public func sort(_ field: String, _ order: StrapiSortOrder) -> Self {
         sorts.append((field, order))
         return self

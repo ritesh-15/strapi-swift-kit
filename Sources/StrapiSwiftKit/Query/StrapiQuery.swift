@@ -131,7 +131,15 @@ extension StrapiQuery {
             }
 
             key += "[\(filter.op.rawValue)]"
-            items.append(URLQueryItem(name: key, value: filter.value))
+
+            switch filter.value {
+            case .single(let value):
+                items.append(URLQueryItem(name: key, value: value))
+            case .list(let valuesList):
+                for value in valuesList {
+                    items.append(URLQueryItem(name: key, value: value))
+                }
+            }
         }
 
         return items

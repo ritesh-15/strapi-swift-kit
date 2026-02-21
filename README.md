@@ -1,8 +1,8 @@
 # StrapiSwiftKit
 
-A modular, type-safe Swift package for interacting with Strapi REST APIs.
+A modular, type-safe Swift package for interacting with Strapi v5 REST APIs.
 
-StrapiSwiftKit provides a clean Query DSL, a generic Repository layer with full CRUD support, and a transport-abstracted client designed for Swift Concurrency and parallel-safe testing.
+StrapiSwiftKit provides a clean Query DSL, a type-safe request layer, and a transport-abstracted client designed for Swift Concurrency and parallel-safe testing.
 
 ---
 
@@ -15,14 +15,14 @@ StrapiSwiftKit provides a clean Query DSL, a generic Repository layer with full 
   - Sorting
   - Pagination
   - Field selection
-  - Deep populate with field selection, filters, and sort
-- **Generic `StrapiRepository`** with full CRUD support
-  - `list`
-  - `get`
-  - `create`
-  - `update`
-  - `delete`
+  - Deep populate with field selection, nested relations, filters, and sort
+- **`StrapiRequest<Response>`** — type-safe requests with automatic response unwrapping
+  - Single item: `StrapiRequest<ArticleDTO>`
+  - List: `StrapiRequest<[ArticleDTO]>`
+  - Pagination meta always available via `response.meta`
+  - Custom headers per request
 - Transport abstraction (parallel-safe testing)
+- Correlation ID and request/response logging
 - Swift Concurrency compatible
 - Fully unit tested
 - Clean architecture friendly
@@ -48,70 +48,123 @@ Or add to your `Package.swift`:
 ### Create a client
 
 ```swift
-let config = StrapiConfig(
-    baseURL: URL(string: "https://your-strapi-url.com")!
+let client = StrapiClient(
+    config: StrapiConfig(
+        baseURL: URL(string: "https://your-strapi.com/api")!,
+        token: "your-jwt-token"
+    )
 )
-let client = StrapiClient(config: config)
 ```
 
 ### Define a DTO
 
 ```swift
-struct ArticleDTO: Codable, Sendable, Identifiable {
+struct ArticleDTO: Codable, Sendable {
     let id: Int
     let title: String
     let description: String?
 }
 ```
 
-### Create a repository
-
-```swift
-let repository = StrapiRepository<ArticleDTO>(
-    client: client,
-    endpoint: StrapiEndpoint("/articles")
-)
-```
-
 ### Fetch a list
 
 ```swift
-let query = StrapiQuery()
-    .fields("title", "description")
-    .sort("publishedAt", .desc)
-    .page(1, size: 10)
-
-let articles = try await repository.list(query: query)
+let response = try await client.execute(
+    StrapiRequest<[ArticleDTO]>(
+        endpoint: "/articles",
+        query: StrapiQuery()
+            .filters { $0.equals("status", "published") }
+            .sort("publishedAt", .desc)
+            .page(1, size: 10)
+    )
+)
+let articles = response.data
+let total = response.meta?.pagination?.total
+let currentPage = response.meta?.pagination?.page
 ```
 
 ### Fetch a single item
 
 ```swift
-let article = try await repository.get(id: 10, query: nil)
+let response = try await client.execute(
+    StrapiRequest<ArticleDTO>(endpoint: "/articles/10")
+)
+let article = response.data
 ```
 
 ### Create
 
 ```swift
-let newArticle = try await repository.create(
-    ArticleDTO(id: 0, title: "Hello", description: "World")
+let response = try await client.execute(
+    StrapiRequest<ArticleDTO>(
+        endpoint: "/articles",
+        method: .POST,
+        body: ArticleDTO(id: 0, title: "Hello", description: "World")
+    )
 )
+let created = response.data
 ```
 
 ### Update
 
 ```swift
-let updated = try await repository.update(
-    id: 10,
-    ArticleDTO(id: 10, title: "Updated", description: "New")
+let response = try await client.execute(
+    StrapiRequest<ArticleDTO>(
+        endpoint: "/articles/10",
+        method: .PUT,
+        body: ArticleDTO(id: 10, title: "Updated", description: "New")
+    )
 )
+let updated = response.data
 ```
 
 ### Delete
 
 ```swift
-let deleted = try await repository.delete(id: 10)
+let response = try await client.execute(
+    StrapiRequest<ArticleDTO>(
+        endpoint: "/articles/10",
+        method: .DELETE
+    )
+)
 ```
+
+### Custom headers
+
+```swift
+let response = try await client.execute(
+    StrapiRequest<[ArticleDTO]>(
+        endpoint: "/articles",
+        headers: ["X-Custom-Header": "value"]
+    )
+)
+```
+
+---
+
+## 💡 Why StrapiRequest instead of a Repository?
+
+Previous versions of this package used a `StrapiRepository<DTO>` pattern where the endpoint and DTO were bound at init:
+
+```swift
+// Old approach — avoid this
+let repository = StrapiRepository<ArticleDTO>(
+    client: client,
+    endpoint: StrapiEndpoint("/articles")
+)
+let articles = try await repository.list(query: query)
+```
+
+`StrapiRequest` is the recommended approach instead:
+
+| | `StrapiRepository` | `StrapiRequest` |
+|---|---|---|
+| Endpoint binding | Fixed at init | Per call |
+| Custom endpoints | Hard | Easy (`/articles/slug/my-article`) |
+| Control | Low | Full |
+| Boilerplate | More setup | Less |
+| Testability | Requires mock repository | Mock transport only |
+| Flexibility | One DTO per repository | Any DTO per call |
 
 ---
 
@@ -208,6 +261,7 @@ $0.equals("category.slug", "tech")
 ```swift
 StrapiQuery()
     .populate("author")
+// populate[author]=*
 ```
 
 ### With field selection
@@ -217,6 +271,8 @@ StrapiQuery()
     .populate("author") {
         $0.fields("name", "email")
     }
+// populate[author][fields][0]=name
+// populate[author][fields][1]=email
 ```
 
 ### With filters and sort
@@ -281,25 +337,33 @@ StrapiQuery()
 ## 🔗 Combining everything
 
 ```swift
-StrapiQuery()
-    .filters {
-        $0.and {
-            $0.equals("status", "published")
-            $0.or {
-                $0.equals("category", "swift")
-                $0.equals("category", "ios")
+let response = try await client.execute(
+    StrapiRequest<[ArticleDTO]>(
+        endpoint: "/articles",
+        query: StrapiQuery()
+            .filters {
+                $0.and {
+                    $0.equals("status", "published")
+                    $0.or {
+                        $0.equals("category", "swift")
+                        $0.equals("category", "ios")
+                    }
+                }
             }
-        }
-    }
-    .populate("author") {
-        $0.fields("name", "avatar")
-    }
-    .populate("tags") {
-        $0.fields("name", "slug")
-    }
-    .fields("title", "description", "publishedAt")
-    .sort("publishedAt", .desc)
-    .page(1, size: 20)
+            .populate("author") {
+                $0.fields("name", "avatar")
+            }
+            .populate("tags") {
+                $0.fields("name", "slug")
+            }
+            .fields("title", "description", "publishedAt")
+            .sort("publishedAt", .desc)
+            .page(1, size: 20)
+    )
+)
+
+let articles = response.data
+let pagination = response.meta?.pagination
 ```
 
 ---
@@ -325,6 +389,7 @@ swift test
 - iOS 15+
 - macOS 12+
 - Swift 5.9+
+- Strapi v5+
 
 ---
 

@@ -26,7 +26,7 @@ extension StrapiFilter {
     ) -> StrapiFilter {
         .init(
             path: field.split(separator: ".").map(String.init),
-            op: .containsi,
+            op: .contains,
             value: .single(value)
         )
     }

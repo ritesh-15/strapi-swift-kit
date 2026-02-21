@@ -1,8 +1,9 @@
 import Foundation
 
-public final class StrapiQuery: @unchecked Sendable {
+public struct StrapiQuery: Sendable {
 
     private var filters: [StrapiFilter] = []
+    private var deepFilters: [FilterNode] = []
     private var populates: [String] = []
     private var fields: [String] = []
     private var sorts: [(String, StrapiSortOrder)] = []
@@ -11,39 +12,100 @@ public final class StrapiQuery: @unchecked Sendable {
 
     public init() {}
 
-    @discardableResult
+    private init(filters: [StrapiFilter], deepFilters: [FilterNode], populates: [String], fields: [String], sorts: [(String, StrapiSortOrder)], pageNumber: Int?, pageSize: Int?) {
+        self.filters = filters
+        self.deepFilters = deepFilters
+        self.populates = populates
+        self.fields = fields
+        self.sorts = sorts
+        self.pageNumber = pageNumber
+        self.pageSize = pageSize
+    }
+
+    @available(*, deprecated, renamed: "filters", message: "Use `filters` instead.")
     public func filter(_ f: StrapiFilter) -> Self {
-        filters.append(f)
-        return self
+        StrapiQuery(
+            filters: filters + [f],
+            deepFilters: deepFilters,
+            populates: populates,
+            fields: fields,
+            sorts: sorts,
+            pageNumber: pageNumber,
+            pageSize: pageSize
+        )
+    }
+
+    @discardableResult
+    public func filters(_ block:(inout FilterQueryBuilder) -> Void) -> Self {
+        var builder = FilterQueryBuilder()
+        block(&builder)
+        let wrapped = builder.nodes.count == 1 ? builder.nodes : [.and(builder.nodes)]
+        return StrapiQuery(
+            filters: filters,
+            deepFilters: deepFilters + wrapped,
+            populates: populates,
+            fields: fields,
+            sorts: sorts,
+            pageNumber: pageNumber,
+            pageSize: pageSize
+        )
     }
 
     @discardableResult
     public func sort(_ field: String, _ order: StrapiSortOrder) -> Self {
-        sorts.append((field, order))
-        return self
+        StrapiQuery(
+            filters: filters,
+            deepFilters: deepFilters,
+            populates: populates,
+            fields: fields,
+            sorts: sorts + [(field, order)],
+            pageNumber: pageNumber,
+            pageSize: pageSize
+        )
     }
 
     @discardableResult
     public func page(_ page: Int, size pageSize: Int) -> Self {
-        self.pageSize = pageSize
-        self.pageNumber = page
-        return self
+        StrapiQuery(
+            filters: filters,
+            deepFilters: deepFilters,
+            populates: populates,
+            fields: fields,
+            sorts: sorts,
+            pageNumber: page,
+            pageSize: pageSize
+        )
     }
 
     @discardableResult
     public func populate(_ field: String) -> Self {
-        self.populates.append(field)
-        return self
+        StrapiQuery(
+            filters: filters,
+            deepFilters: deepFilters,
+            populates: populates + [field],
+            fields: fields,
+            sorts: sorts,
+            pageNumber: pageNumber,
+            pageSize: pageSize
+        )
     }
 
     @discardableResult
     public func fields(_ field: String...) -> Self {
-        self.fields.append(contentsOf: field)
-        return self
+        StrapiQuery(
+            filters: filters,
+            deepFilters: deepFilters,
+            populates: populates,
+            fields: fields + field,
+            sorts: sorts,
+            pageNumber: pageNumber,
+            pageSize: pageSize
+        )
     }
 
-    public func build() -> [URLQueryItem] {
+    func build() -> [URLQueryItem] {
         var items: [URLQueryItem] = filtersQueryItems()
+        items.append(contentsOf: FilterEncoder().encode(nodes: deepFilters))
         items.append(contentsOf: sortQueryItems())
         items.append(contentsOf: paginationQueryItems())
         items.append(contentsOf: populatesQueryItems())

@@ -90,6 +90,47 @@ public extension StrapiClient {
             throw StrapiError.transport(e.localizedDescription)
         }
     }
+
+    func execute<Response: Decodable & Sendable>(
+        _ request: StrapiRequest<Response>
+    ) async throws -> StrapiResponse<Response> {
+        let requestID = UUID().uuidString
+        let start = Date()
+
+        // Bridge to existing buildRequest
+        let body = try request.body.map { try JSONEncoder().encode($0) }
+        var urlRequest = try buildRequest(
+            endpoint: StrapiEndpoint(request.endpoint, method: request.method),
+            queryItems: request.query?.build(),
+            body: body
+        )
+
+        // Forward custom headers
+        request.headers?.forEach {
+            urlRequest.setValue($0.value, forHTTPHeaderField: $0.key)
+        }
+
+        logger?.logRequest(urlRequest, correlationID: requestID)
+
+        do {
+            let (data, response) = try await transport.send(urlRequest)
+            let httpResponse = try validate(response, data)
+            let durationMs = Int(Date().timeIntervalSince(start) * 1000)
+            logger?.logResponse(response: httpResponse, data: data, correlationID: requestID, durationMs: durationMs)
+
+            let wrapper = try JSONDecoder.strapi.decode(StrapiResponseWrapper<Response>.self, from: data)
+            return StrapiResponse(data: wrapper.data, meta: wrapper.meta)
+        } catch let e as DecodingError {
+            logger?.logNetworkError(e, correlationID: requestID, request: urlRequest, since: start)
+            throw StrapiError.decoding(e.localizedDescription)
+        } catch let e as StrapiError {
+            logger?.logNetworkError(e, correlationID: requestID, request: urlRequest, since: start)
+            throw e
+        } catch {
+            logger?.logNetworkError(error, correlationID: requestID, request: urlRequest, since: start)
+            throw StrapiError.transport(error.localizedDescription)
+        }
+    }
 }
 
 private extension StrapiClient {

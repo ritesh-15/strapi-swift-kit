@@ -295,7 +295,7 @@ struct StrapiQueryTests {
         #expect(dict["sort[0]"]?.first?.value == "publishedAt:desc")
         #expect(dict["pagination[page]"]?.first?.value == "1")
         #expect(dict["pagination[pageSize]"]?.first?.value == "10")
-        #expect(dict["populate[0]"]?.first?.value == "author")
+        #expect(dict["populate[author]"]?.first?.value == "*")
 
         // fields are indexed; verify both present
         #expect(items.contains { $0.name == "fields[0]" && $0.value == "title" })
@@ -403,8 +403,8 @@ struct StrapiQueryTests {
         let items = query.build()
 
         #expect(items.count == 1)
-        #expect(items[0].name == "populate[0]")
-        #expect(items[0].value == "author")
+        #expect(items[0].name == "populate[author]")
+        #expect(items[0].value == "*")
     }
 
     /// Adds multiple populate fields.
@@ -419,11 +419,11 @@ struct StrapiQueryTests {
 
         #expect(items.count == 2)
 
-        #expect(items[0].name == "populate[0]")
-        #expect(items[0].value == "author")
+        #expect(items[0].name == "populate[author]")
+        #expect(items[0].value == "*")
 
-        #expect(items[1].name == "populate[1]")
-        #expect(items[1].value == "comments")
+        #expect(items[1].name == "populate[comments]")
+        #expect(items[1].value == "*")
     }
 
     // MARK: Fields
@@ -497,8 +497,8 @@ struct StrapiQueryTests {
         #expect(items.contains { $0.name == "fields[0]" && $0.value == "id" })
         #expect(items.contains { $0.name == "fields[1]" && $0.value == "title" })
         // populate indices
-        #expect(items.contains { $0.name == "populate[0]" && $0.value == "author" })
-        #expect(items.contains { $0.name == "populate[1]" && $0.value == "comments" })
+        #expect(items.contains { $0.name == "populate[author]" && $0.value == "*" })
+        #expect(items.contains { $0.name == "populate[comments]" && $0.value == "*" })
     }
 
     /// Duplicate filters on the same key should emit multiple items with same key.
@@ -557,8 +557,8 @@ struct StrapiQueryTests {
             .populate("author")
             .populate("author")
         let items = query.build()
-        #expect(items.contains { $0.name == "populate[0]" && $0.value == "author" })
-        #expect(items.contains { $0.name == "populate[1]" && $0.value == "author" })
+        #expect(items.contains { $0.name == "populate[author]" && $0.value == "*" })
+        #expect(items.contains { $0.name == "populate[author]" && $0.value == "*" })
     }
 
     /// Mixed nested path filters ensure deep path splitting across multiple depths.

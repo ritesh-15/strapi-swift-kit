@@ -5,6 +5,7 @@ public struct StrapiQuery: Sendable {
     private var filters: [StrapiFilter] = []
     private var deepFilters: [FilterNode] = []
     private var populates: [String] = []
+    private var deepPopulate: [PopulateNode] = []
     private var fields: [String] = []
     private var sorts: [(String, StrapiSortOrder)] = []
     private var pageNumber: Int?
@@ -12,10 +13,18 @@ public struct StrapiQuery: Sendable {
 
     public init() {}
 
-    private init(filters: [StrapiFilter], deepFilters: [FilterNode], populates: [String], fields: [String], sorts: [(String, StrapiSortOrder)], pageNumber: Int?, pageSize: Int?) {
+    private init(filters: [StrapiFilter],
+                 deepFilters: [FilterNode],
+                 populates: [String],
+                 deepPopulate:[PopulateNode],
+                 fields: [String],
+                 sorts: [(String, StrapiSortOrder)],
+                 pageNumber: Int?,
+                 pageSize: Int?) {
         self.filters = filters
         self.deepFilters = deepFilters
         self.populates = populates
+        self.deepPopulate = deepPopulate
         self.fields = fields
         self.sorts = sorts
         self.pageNumber = pageNumber
@@ -28,6 +37,7 @@ public struct StrapiQuery: Sendable {
             filters: filters + [f],
             deepFilters: deepFilters,
             populates: populates,
+            deepPopulate: deepPopulate,
             fields: fields,
             sorts: sorts,
             pageNumber: pageNumber,
@@ -44,6 +54,39 @@ public struct StrapiQuery: Sendable {
             filters: filters,
             deepFilters: deepFilters + wrapped,
             populates: populates,
+            deepPopulate: deepPopulate,
+            fields: fields,
+            sorts: sorts,
+            pageNumber: pageNumber,
+            pageSize: pageSize
+        )
+    }
+
+    @discardableResult
+    public func populate(_ name: String, _ block: (inout PopulateQueryBuilder) -> Void) -> Self {
+        var builder = PopulateQueryBuilder()
+        block(&builder)
+        let node = PopulateNode.relation(name, builder.nodes)
+        return StrapiQuery(
+            filters: filters,
+            deepFilters: deepFilters,
+            populates: populates,
+            deepPopulate: deepPopulate + [node],
+            fields: fields,
+            sorts: sorts,
+            pageNumber: pageNumber,
+            pageSize: pageSize
+        )
+    }
+
+    @discardableResult
+    public func populate(_ name: String) -> Self {
+        let node = PopulateNode.relation(name, [])
+        return StrapiQuery(
+            filters: filters,
+            deepFilters: deepFilters,
+            populates: populates,
+            deepPopulate: deepPopulate + [node],
             fields: fields,
             sorts: sorts,
             pageNumber: pageNumber,
@@ -57,6 +100,7 @@ public struct StrapiQuery: Sendable {
             filters: filters,
             deepFilters: deepFilters,
             populates: populates,
+            deepPopulate: deepPopulate,
             fields: fields,
             sorts: sorts + [(field, order)],
             pageNumber: pageNumber,
@@ -70,22 +114,10 @@ public struct StrapiQuery: Sendable {
             filters: filters,
             deepFilters: deepFilters,
             populates: populates,
+            deepPopulate: deepPopulate,
             fields: fields,
             sorts: sorts,
             pageNumber: page,
-            pageSize: pageSize
-        )
-    }
-
-    @discardableResult
-    public func populate(_ field: String) -> Self {
-        StrapiQuery(
-            filters: filters,
-            deepFilters: deepFilters,
-            populates: populates + [field],
-            fields: fields,
-            sorts: sorts,
-            pageNumber: pageNumber,
             pageSize: pageSize
         )
     }
@@ -96,6 +128,7 @@ public struct StrapiQuery: Sendable {
             filters: filters,
             deepFilters: deepFilters,
             populates: populates,
+            deepPopulate: deepPopulate,
             fields: fields + field,
             sorts: sorts,
             pageNumber: pageNumber,
@@ -106,6 +139,7 @@ public struct StrapiQuery: Sendable {
     func build() -> [URLQueryItem] {
         var items: [URLQueryItem] = filtersQueryItems()
         items.append(contentsOf: FilterEncoder().encode(nodes: deepFilters))
+        items.append(contentsOf: PopulateEncoder().encode(deepPopulate))
         items.append(contentsOf: sortQueryItems())
         items.append(contentsOf: paginationQueryItems())
         items.append(contentsOf: populatesQueryItems())

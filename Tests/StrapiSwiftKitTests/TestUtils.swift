@@ -46,4 +46,13 @@ class TestUtils {
         }
         """.data(using: .utf8)!
     }
+
+    static func asDict(_ items: [URLQueryItem]) -> [String: String] {
+        var dict: [String: String] = [:]
+        for item in items {
+            dict[item.name] = item.value ?? ""
+        }
+        return dict
+    }
+
 }

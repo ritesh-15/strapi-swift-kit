@@ -97,12 +97,10 @@ public extension StrapiClient {
         let requestID = UUID().uuidString
         let start = Date()
 
-        // Bridge to existing buildRequest
-        let body = try request.body.map { try JSONEncoder().encode($0) }
         var urlRequest = try buildRequest(
             endpoint: StrapiEndpoint(request.endpoint, method: request.method),
             queryItems: request.query?.build(),
-            body: body
+            body: request.body
         )
 
         // Forward custom headers

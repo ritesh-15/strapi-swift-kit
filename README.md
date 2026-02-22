@@ -1,7 +1,7 @@
 # StrapiSwiftKit
 
 ![CI](https://github.com/ritesh-15/strapi-swift-kit/actions/workflows/CI.yaml/badge.svg)
-![Swift](https://img.shields.io/badge/Swift-5.9+-orange.svg)
+![Swift](https://img.shields.io/badge/Swift-6.2+-orange.svg)
 ![SPM](https://img.shields.io/badge/SPM-compatible-brightgreen.svg)
 ![Platforms](https://img.shields.io/badge/platforms-iOS%2015%2B%20%7C%20macOS%2012%2B-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-lightgrey.svg)
@@ -564,7 +564,7 @@ swift test
 
 - iOS 15+
 - macOS 12+
-- Swift 5.9+
+- Swift 6.2+
 - Strapi v5+
 
 ---
